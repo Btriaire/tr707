@@ -142,6 +142,10 @@ export interface Kit {
   humanize: number; // 0..1, variation aléatoire de pitch/timing/vélocité par coup
   subBoost: number; // 0..1, renfort de sub sur le kick (mix supplémentaire)
   toneTilt: number; // -1..1, bascule sombre(-1)/brillant(+1), shelving EQ global
+  // échantillons réels (générés par IA) pour certaines voix — les voix non
+  // listées ici retombent sur la synthèse (kickType/snareType/hatType),
+  // kit "hybride" : vrais sons là où on en a, synthèse pour le reste
+  sampleUrls?: Partial<Record<InstrumentId, string>>;
 }
 export const KITS: Kit[] = [
   { name: "80s Pop Kit 1", kickType: "classic", snareType: "classic", hatType: "classic",
@@ -164,6 +168,19 @@ export const KITS: Kit[] = [
     pitchMult: 1.15, decayMult: 0.6, drive: 0.65, room: 0.1, stereoWidth: 0.3, humanize: 0.05, subBoost: 0.3, toneTilt: 0.15 },
   { name: "Jazz Brush Kit", kickType: "acoustic", snareType: "brush", hatType: "soft",
     pitchMult: 0.98, decayMult: 0.85, drive: 0, room: 0.3, stereoWidth: 1, humanize: 0.7, subBoost: 0, toneTilt: -0.2 },
+  // kit hybride : kick/snare/low tom = vrais sons générés par IA (ElevenLabs
+  // Sound Effects), le reste (toms restants, rim, cowbell, clap, tamb,
+  // hi-hats, cymbales) retombe sur la synthèse "classic" — quota IA épuisé
+  // avant d'avoir pu générer les 15 voix, complété plus tard
+  { name: "AI Generated Kit", kickType: "classic", snareType: "classic", hatType: "classic",
+    pitchMult: 1, decayMult: 1, drive: 0, room: 0.15, stereoWidth: 0.7, humanize: 0.15, subBoost: 0, toneTilt: 0,
+    sampleUrls: {
+      bd1: "/samples/aigen/bd1.mp3",
+      bd2: "/samples/aigen/bd2.mp3",
+      sd1: "/samples/aigen/sd1.mp3",
+      sd2: "/samples/aigen/sd2.mp3",
+      lt: "/samples/aigen/lt.mp3",
+    } },
 ];
 
 // position stéréo par voix (-1 gauche .. +1 droite), échelle par kit.stereoWidth
@@ -234,6 +251,10 @@ export class TR707Engine {
   private limiterMakeup: GainNode | null = null;
   limiterOn = false;
   analyser: AnalyserNode | null = null;
+
+  // échantillons réels (kits hybrides) : cache par URL, chargement async
+  private sampleBuffers: Map<string, AudioBuffer> = new Map();
+  private samplesLoading: Set<string> = new Set();
 
   faders: Record<FaderId, number> = {
     ac: 0.7, bd: 0.85, sd: 0.8, lt: 0.7, mt: 0.7, ht: 0.7,
@@ -330,6 +351,7 @@ export class TR707Engine {
     this.reverbReturn.connect(this.master);
 
     this.applyToneTilt();
+    this.preloadKitSamples(this.kitIndex);
 
     for (const id of FADER_IDS) {
       const g = ctx.createGain();
@@ -357,6 +379,44 @@ export class TR707Engine {
     if (this.shaper) this.shaper.curve = makeLofiCurve(KITS[i].drive) as Float32Array<ArrayBuffer>;
     this.reverbSend?.gain.setTargetAtTime(KITS[i].room, t, 0.05);
     this.applyToneTilt();
+    this.preloadKitSamples(i);
+  }
+
+  // précharge les échantillons du kit (si présents) — asynchrone, avec repli
+  // sur la synthèse tant que le buffer n'est pas encore prêt
+  private preloadKitSamples(i: number) {
+    const urls = KITS[i].sampleUrls;
+    if (!urls) return;
+    for (const url of Object.values(urls)) {
+      if (url) this.ensureSampleLoaded(url);
+    }
+  }
+
+  private ensureSampleLoaded(url: string) {
+    if (!this.ctx || this.sampleBuffers.has(url) || this.samplesLoading.has(url)) return;
+    this.samplesLoading.add(url);
+    fetch(url)
+      .then((r) => r.arrayBuffer())
+      .then((arr) => this.ctx!.decodeAudioData(arr))
+      .then((decoded) => {
+        this.sampleBuffers.set(url, decoded);
+        this.samplesLoading.delete(url);
+      })
+      .catch(() => {
+        this.samplesLoading.delete(url);
+      });
+  }
+
+  private playSample(buffer: AudioBuffer, dest: AudioNode, time: number, vel: number, pitchMult: number) {
+    if (!this.ctx) return;
+    const src = this.ctx.createBufferSource();
+    src.buffer = buffer;
+    src.playbackRate.value = pitchMult;
+    const amp = this.ctx.createGain();
+    amp.gain.value = Math.min(1, vel);
+    src.connect(amp);
+    amp.connect(dest);
+    src.start(time);
   }
 
   private applyToneTilt() {
@@ -412,6 +472,18 @@ export class TR707Engine {
     const pm = kit.pitchMult * (1 + (Math.random() * 2 - 1) * kit.humanize * 0.03);
     const dm = kit.decayMult;
     vel = vel * (1 + (Math.random() * 2 - 1) * kit.humanize * 0.12);
+
+    // kit hybride : si un vrai échantillon existe (et est chargé) pour cette
+    // voix, il remplace entièrement la synthèse ci-dessous
+    const sampleUrl = kit.sampleUrls?.[id];
+    if (sampleUrl) {
+      const buf = this.sampleBuffers.get(sampleUrl);
+      if (buf) {
+        this.playSample(buf, dest, time, vel, pm);
+        return;
+      }
+      this.ensureSampleLoaded(sampleUrl); // pas encore prêt : synthèse en repli cette fois-ci
+    }
 
     if ((id === "bd1" || id === "bd2") && kit.subBoost > 0) {
       const sub = ctx.createOscillator();
