@@ -153,7 +153,14 @@ body {
   border-radius: 50%;
   background: #1f2a1d;
 }
-.lcd-fields { display: flex; flex-direction: column; gap: 3px; }
+.lcd-fields {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  background: #a5b0a2;
+  border-radius: 2px;
+  padding: 4px 6px;
+}
 .lcd-field { display: flex; align-items: center; gap: 6px; font-size: 10px; }
 .lcd-field-label {
   font-weight: 800;

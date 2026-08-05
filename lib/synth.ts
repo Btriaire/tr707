@@ -122,8 +122,18 @@ export function randomPattern(length = 16): Pattern {
   return p;
 }
 
+// chaque famille a un algorithme de synthèse RÉELLEMENT différent (pas
+// juste pitch/decay) — c'est kickType/snareType/hatType qui font sonner les
+// kits différemment, pitchMult/decayMult ne font qu'affiner à la marge
+export type KickType = "classic" | "deep808" | "acoustic" | "distorted";
+export type SnareType = "classic" | "tight" | "acoustic" | "brush" | "industrial";
+export type HatType = "classic" | "fmBell" | "soft" | "crushed";
+
 export interface Kit {
   name: string;
+  kickType: KickType;
+  snareType: SnareType;
+  hatType: HatType;
   pitchMult: number;
   decayMult: number;
   drive: number; // 0..1, ajoute un léger waveshaping "lo-fi"
@@ -134,17 +144,26 @@ export interface Kit {
   toneTilt: number; // -1..1, bascule sombre(-1)/brillant(+1), shelving EQ global
 }
 export const KITS: Kit[] = [
-  { name: "80s Pop Kit 1", pitchMult: 1, decayMult: 1, drive: 0, room: 0.12, stereoWidth: 0.6, humanize: 0.2, subBoost: 0, toneTilt: 0 },
-  { name: "Punchy Kit", pitchMult: 1.08, decayMult: 0.75, drive: 0.15, room: 0.05, stereoWidth: 0.5, humanize: 0.1, subBoost: 0.2, toneTilt: 0.1 },
-  { name: "Lo-Fi Kit", pitchMult: 0.92, decayMult: 1.2, drive: 0.4, room: 0.2, stereoWidth: 0.4, humanize: 0.35, subBoost: 0, toneTilt: -0.3 },
-  { name: "Bright Kit", pitchMult: 1.15, decayMult: 0.9, drive: 0.05, room: 0.1, stereoWidth: 0.7, humanize: 0.15, subBoost: 0, toneTilt: 0.35 },
-  { name: "Acoustic Studio Kit", pitchMult: 0.97, decayMult: 1.15, drive: 0.04, room: 0.38, stereoWidth: 1, humanize: 0.55, subBoost: 0.1, toneTilt: 0 },
-  { name: "Modern Punch Kit", pitchMult: 1.04, decayMult: 0.68, drive: 0.22, room: 0.06, stereoWidth: 0.75, humanize: 0.08, subBoost: 0.45, toneTilt: 0.1 },
-  // quatre kits supplémentaires, chacun avec une identité sonore nette
-  { name: "808 Trap Kit", pitchMult: 0.95, decayMult: 1.4, drive: 0.1, room: 0.05, stereoWidth: 0.6, humanize: 0.05, subBoost: 0.7, toneTilt: 0.3 },
-  { name: "Vintage Tape Kit", pitchMult: 0.9, decayMult: 1.05, drive: 0.5, room: 0.25, stereoWidth: 0.5, humanize: 0.4, subBoost: 0.15, toneTilt: -0.55 },
-  { name: "Industrial Kit", pitchMult: 1.15, decayMult: 0.6, drive: 0.65, room: 0.1, stereoWidth: 0.3, humanize: 0.05, subBoost: 0.3, toneTilt: 0.15 },
-  { name: "Jazz Brush Kit", pitchMult: 0.98, decayMult: 0.85, drive: 0, room: 0.3, stereoWidth: 1, humanize: 0.7, subBoost: 0, toneTilt: -0.2 },
+  { name: "80s Pop Kit 1", kickType: "classic", snareType: "classic", hatType: "classic",
+    pitchMult: 1, decayMult: 1, drive: 0, room: 0.12, stereoWidth: 0.6, humanize: 0.2, subBoost: 0, toneTilt: 0 },
+  { name: "Punchy Kit", kickType: "acoustic", snareType: "tight", hatType: "classic",
+    pitchMult: 1.08, decayMult: 0.75, drive: 0.15, room: 0.05, stereoWidth: 0.5, humanize: 0.1, subBoost: 0.2, toneTilt: 0.1 },
+  { name: "Lo-Fi Kit", kickType: "classic", snareType: "classic", hatType: "crushed",
+    pitchMult: 0.92, decayMult: 1.2, drive: 0.4, room: 0.2, stereoWidth: 0.4, humanize: 0.35, subBoost: 0, toneTilt: -0.3 },
+  { name: "Bright Kit", kickType: "classic", snareType: "classic", hatType: "fmBell",
+    pitchMult: 1.15, decayMult: 0.9, drive: 0.05, room: 0.1, stereoWidth: 0.7, humanize: 0.15, subBoost: 0, toneTilt: 0.35 },
+  { name: "Acoustic Studio Kit", kickType: "acoustic", snareType: "acoustic", hatType: "soft",
+    pitchMult: 0.97, decayMult: 1.15, drive: 0.04, room: 0.38, stereoWidth: 1, humanize: 0.55, subBoost: 0.1, toneTilt: 0 },
+  { name: "Modern Punch Kit", kickType: "deep808", snareType: "tight", hatType: "classic",
+    pitchMult: 1.04, decayMult: 0.68, drive: 0.22, room: 0.06, stereoWidth: 0.75, humanize: 0.08, subBoost: 0.45, toneTilt: 0.1 },
+  { name: "808 Trap Kit", kickType: "deep808", snareType: "tight", hatType: "fmBell",
+    pitchMult: 0.95, decayMult: 1.4, drive: 0.1, room: 0.05, stereoWidth: 0.6, humanize: 0.05, subBoost: 0.7, toneTilt: 0.3 },
+  { name: "Vintage Tape Kit", kickType: "acoustic", snareType: "brush", hatType: "soft",
+    pitchMult: 0.9, decayMult: 1.05, drive: 0.5, room: 0.25, stereoWidth: 0.5, humanize: 0.4, subBoost: 0.15, toneTilt: -0.55 },
+  { name: "Industrial Kit", kickType: "distorted", snareType: "industrial", hatType: "crushed",
+    pitchMult: 1.15, decayMult: 0.6, drive: 0.65, room: 0.1, stereoWidth: 0.3, humanize: 0.05, subBoost: 0.3, toneTilt: 0.15 },
+  { name: "Jazz Brush Kit", kickType: "acoustic", snareType: "brush", hatType: "soft",
+    pitchMult: 0.98, decayMult: 0.85, drive: 0, room: 0.3, stereoWidth: 1, humanize: 0.7, subBoost: 0, toneTilt: -0.2 },
 ];
 
 // position stéréo par voix (-1 gauche .. +1 droite), échelle par kit.stereoWidth
@@ -164,6 +183,22 @@ function makeLofiCurve(amount: number): Float32Array {
     const x = (i * 2) / n - 1;
     c[i] = Math.tanh(k * x) / Math.tanh(k);
   }
+  return c;
+}
+
+// quantifie le signal (réduction de résolution façon bit-crusher), pour le
+// hatType "crushed" — granuleux, numérique, très différent du bandpass classique
+let crushCurveCache: Float32Array | null = null;
+function makeCrushCurve(): Float32Array {
+  if (crushCurveCache) return crushCurveCache;
+  const n = 2048;
+  const c = new Float32Array(n);
+  const steps = 10;
+  for (let i = 0; i < n; i++) {
+    const x = (i * 2) / n - 1;
+    c[i] = Math.round(x * steps) / steps;
+  }
+  crushCurveCache = c;
   return c;
 }
 
@@ -396,71 +431,267 @@ export class TR707Engine {
       case "bd1":
       case "bd2": {
         const variant = id === "bd1" ? 1 : 2;
-        const osc = ctx.createOscillator();
-        osc.type = "sine";
-        const startFreq = (variant === 1 ? 165 : 145) * pm;
-        const endFreq = (variant === 1 ? 48 : 42) * pm;
-        const pitchDecay = (variant === 1 ? 0.09 : 0.13) * dm;
-        osc.frequency.setValueAtTime(startFreq, time);
-        osc.frequency.exponentialRampToValueAtTime(Math.max(endFreq, 20), time + pitchDecay);
-        const amp = ctx.createGain();
-        const ampDecay = (variant === 1 ? 0.22 : 0.35) * dm;
-        amp.gain.setValueAtTime(vel, time);
-        amp.gain.exponentialRampToValueAtTime(0.001, time + ampDecay);
-        osc.connect(amp);
-        amp.connect(dest);
-        osc.start(time);
-        osc.stop(time + ampDecay + 0.05);
 
-        const click = ctx.createOscillator();
-        click.type = "square";
-        click.frequency.value = 1800 * pm;
-        const clickAmp = ctx.createGain();
-        clickAmp.gain.setValueAtTime(vel * 0.4, time);
-        clickAmp.gain.exponentialRampToValueAtTime(0.001, time + 0.004);
-        click.connect(clickAmp);
-        clickAmp.connect(dest);
-        click.start(time);
-        click.stop(time + 0.01);
+        if (kit.kickType === "deep808") {
+          // 808 : chute de pitch lente, decay long, pas de click dur — un
+          // "thump" grave et soutenu plutôt qu'un coup sec
+          const osc = ctx.createOscillator();
+          osc.type = "sine";
+          const startFreq = (variant === 1 ? 78 : 68) * pm;
+          const endFreq = (variant === 1 ? 32 : 28) * pm;
+          const pitchDecay = 0.32 * dm;
+          osc.frequency.setValueAtTime(startFreq, time);
+          osc.frequency.exponentialRampToValueAtTime(Math.max(endFreq, 18), time + pitchDecay);
+          const amp = ctx.createGain();
+          const ampDecay = 0.55 * dm;
+          amp.gain.setValueAtTime(0.0001, time);
+          amp.gain.linearRampToValueAtTime(vel, time + 0.006);
+          amp.gain.exponentialRampToValueAtTime(0.001, time + ampDecay);
+          osc.connect(amp);
+          amp.connect(dest);
+          osc.start(time);
+          osc.stop(time + ampDecay + 0.05);
+        } else if (kit.kickType === "acoustic") {
+          // fût acoustique : deux partiels (fondamentale + harmonique qui
+          // décroît plus vite) + transitoire de batteur en bruit filtré
+          const startFreq = (variant === 1 ? 140 : 120) * pm;
+          const endFreq = (variant === 1 ? 55 : 48) * pm;
+          const pitchDecay = 0.1 * dm;
+          const ampDecay = (variant === 1 ? 0.2 : 0.28) * dm;
+          const osc = ctx.createOscillator();
+          osc.type = "sine";
+          osc.frequency.setValueAtTime(startFreq, time);
+          osc.frequency.exponentialRampToValueAtTime(Math.max(endFreq, 20), time + pitchDecay);
+          const amp = ctx.createGain();
+          amp.gain.setValueAtTime(vel, time);
+          amp.gain.exponentialRampToValueAtTime(0.001, time + ampDecay);
+          osc.connect(amp);
+          amp.connect(dest);
+          osc.start(time);
+          osc.stop(time + ampDecay + 0.05);
+
+          const osc2 = ctx.createOscillator();
+          osc2.type = "sine";
+          osc2.frequency.setValueAtTime(startFreq * 2.4, time);
+          osc2.frequency.exponentialRampToValueAtTime(endFreq * 1.6, time + pitchDecay * 0.6);
+          const amp2 = ctx.createGain();
+          amp2.gain.setValueAtTime(vel * 0.25, time);
+          amp2.gain.exponentialRampToValueAtTime(0.001, time + ampDecay * 0.35);
+          osc2.connect(amp2);
+          amp2.connect(dest);
+          osc2.start(time);
+          osc2.stop(time + ampDecay * 0.35 + 0.03);
+
+          const noise = this.noise();
+          const nf = ctx.createBiquadFilter();
+          nf.type = "bandpass";
+          nf.frequency.value = 1100;
+          nf.Q.value = 0.9;
+          const namp = ctx.createGain();
+          namp.gain.setValueAtTime(vel * 0.3, time);
+          namp.gain.exponentialRampToValueAtTime(0.001, time + 0.018);
+          noise.connect(nf);
+          nf.connect(namp);
+          namp.connect(dest);
+          noise.start(time);
+          noise.stop(time + 0.025);
+        } else if (kit.kickType === "distorted") {
+          // triangle (pas sinus) + saturation dédiée très dure : grain
+          // agressif, industriel, distinct de tout le reste
+          const osc = ctx.createOscillator();
+          osc.type = "triangle";
+          const startFreq = (variant === 1 ? 150 : 130) * pm;
+          const endFreq = (variant === 1 ? 50 : 44) * pm;
+          const pitchDecay = 0.08 * dm;
+          osc.frequency.setValueAtTime(startFreq, time);
+          osc.frequency.exponentialRampToValueAtTime(Math.max(endFreq, 20), time + pitchDecay);
+          const preAmp = ctx.createGain();
+          const ampDecay = (variant === 1 ? 0.18 : 0.26) * dm;
+          preAmp.gain.setValueAtTime(vel * 2.2, time);
+          preAmp.gain.exponentialRampToValueAtTime(0.001, time + ampDecay);
+          const crush = ctx.createWaveShaper();
+          crush.curve = makeLofiCurve(0.95) as Float32Array<ArrayBuffer>;
+          crush.oversample = "2x";
+          osc.connect(preAmp);
+          preAmp.connect(crush);
+          crush.connect(dest);
+          osc.start(time);
+          osc.stop(time + ampDecay + 0.05);
+        } else {
+          // classic (80s) : sinus + click carré net, le son TR-707 d'origine
+          const osc = ctx.createOscillator();
+          osc.type = "sine";
+          const startFreq = (variant === 1 ? 165 : 145) * pm;
+          const endFreq = (variant === 1 ? 48 : 42) * pm;
+          const pitchDecay = (variant === 1 ? 0.09 : 0.13) * dm;
+          osc.frequency.setValueAtTime(startFreq, time);
+          osc.frequency.exponentialRampToValueAtTime(Math.max(endFreq, 20), time + pitchDecay);
+          const amp = ctx.createGain();
+          const ampDecay = (variant === 1 ? 0.22 : 0.35) * dm;
+          amp.gain.setValueAtTime(vel, time);
+          amp.gain.exponentialRampToValueAtTime(0.001, time + ampDecay);
+          osc.connect(amp);
+          amp.connect(dest);
+          osc.start(time);
+          osc.stop(time + ampDecay + 0.05);
+
+          const click = ctx.createOscillator();
+          click.type = "square";
+          click.frequency.value = 1800 * pm;
+          const clickAmp = ctx.createGain();
+          clickAmp.gain.setValueAtTime(vel * 0.4, time);
+          clickAmp.gain.exponentialRampToValueAtTime(0.001, time + 0.004);
+          click.connect(clickAmp);
+          clickAmp.connect(dest);
+          click.start(time);
+          click.stop(time + 0.01);
+        }
         break;
       }
       case "sd1":
       case "sd2": {
         const variant = id === "sd1" ? 1 : 2;
-        const toneDecay = 0.1 * dm;
-        // deux partiels toniques (peau du dessus + peau du dessous), comme
-        // les deux résonances d'une vraie caisse claire
-        for (const [freq, mix] of [[(variant === 1 ? 200 : 175), 0.5], [(variant === 1 ? 335 : 290), 0.22]] as const) {
+
+        if (kit.snareType === "tight") {
+          // trap/808 : un seul ton court + un claquement de bruit très bref,
+          // beaucoup plus sec et court que le classic
           const osc = ctx.createOscillator();
           osc.type = "triangle";
-          osc.frequency.value = freq * pm;
+          osc.frequency.value = (variant === 1 ? 260 : 230) * pm;
           const oscAmp = ctx.createGain();
-          oscAmp.gain.setValueAtTime(vel * mix, time);
+          const toneDecay = 0.045 * dm;
+          oscAmp.gain.setValueAtTime(vel * 0.6, time);
           oscAmp.gain.exponentialRampToValueAtTime(0.001, time + toneDecay);
           osc.connect(oscAmp);
           oscAmp.connect(dest);
           osc.start(time);
           osc.stop(time + toneDecay + 0.02);
-        }
 
-        const noise = this.noise();
-        const nf = ctx.createBiquadFilter();
-        nf.type = "bandpass";
-        nf.frequency.value = variant === 1 ? 1800 : 1400;
-        nf.Q.value = 0.6;
-        const nf2 = ctx.createBiquadFilter();
-        nf2.type = "highpass";
-        nf2.frequency.value = variant === 1 ? 900 : 650;
-        const namp = ctx.createGain();
-        const noiseDecay = (variant === 1 ? 0.13 : 0.22) * dm;
-        namp.gain.setValueAtTime(vel * (variant === 1 ? 0.7 : 0.95), time);
-        namp.gain.exponentialRampToValueAtTime(0.001, time + noiseDecay);
-        noise.connect(nf);
-        nf.connect(nf2);
-        nf2.connect(namp);
-        namp.connect(dest);
-        noise.start(time);
-        noise.stop(time + noiseDecay + 0.02);
+          const noise = this.noise();
+          const nf = ctx.createBiquadFilter();
+          nf.type = "highpass";
+          nf.frequency.value = 2200;
+          const namp = ctx.createGain();
+          const noiseDecay = 0.06 * dm;
+          namp.gain.setValueAtTime(vel * 0.85, time);
+          namp.gain.exponentialRampToValueAtTime(0.001, time + noiseDecay);
+          noise.connect(nf);
+          nf.connect(namp);
+          namp.connect(dest);
+          noise.start(time);
+          noise.stop(time + noiseDecay + 0.02);
+        } else if (kit.snareType === "acoustic") {
+          // timbre acoustique : bruit très résonnant (bruit de timbre) +
+          // deux tons rapprochés qui battent, decay plus long et texturé
+          const noise = this.noise();
+          const bp = ctx.createBiquadFilter();
+          bp.type = "bandpass";
+          bp.frequency.value = variant === 1 ? 2200 : 1800;
+          bp.Q.value = 3.5;
+          const namp = ctx.createGain();
+          const noiseDecay = (variant === 1 ? 0.28 : 0.34) * dm;
+          namp.gain.setValueAtTime(vel * 0.75, time);
+          namp.gain.exponentialRampToValueAtTime(0.001, time + noiseDecay);
+          noise.connect(bp);
+          bp.connect(namp);
+          namp.connect(dest);
+          noise.start(time);
+          noise.stop(time + noiseDecay + 0.02);
+
+          for (const detune of [1, 1.02]) {
+            const osc = ctx.createOscillator();
+            osc.type = "triangle";
+            osc.frequency.value = (variant === 1 ? 195 : 170) * pm * detune;
+            const oscAmp = ctx.createGain();
+            const toneDecay = 0.1 * dm;
+            oscAmp.gain.setValueAtTime(vel * 0.28, time);
+            oscAmp.gain.exponentialRampToValueAtTime(0.001, time + toneDecay);
+            osc.connect(oscAmp);
+            oscAmp.connect(dest);
+            osc.start(time);
+            osc.stop(time + toneDecay + 0.02);
+          }
+        } else if (kit.snareType === "brush") {
+          // balai jazz : pas de transitoire net, un souffle de bruit qui
+          // monte doucement puis s'éteint — aucun "clac"
+          const noise = this.noise();
+          const bp = ctx.createBiquadFilter();
+          bp.type = "bandpass";
+          bp.frequency.value = variant === 1 ? 1600 : 1300;
+          bp.Q.value = 0.5;
+          const namp = ctx.createGain();
+          const noiseDecay = (variant === 1 ? 0.22 : 0.3) * dm;
+          namp.gain.setValueAtTime(0.0001, time);
+          namp.gain.linearRampToValueAtTime(vel * 0.5, time + 0.018);
+          namp.gain.exponentialRampToValueAtTime(0.001, time + 0.018 + noiseDecay);
+          noise.connect(bp);
+          bp.connect(namp);
+          namp.connect(dest);
+          noise.start(time);
+          noise.stop(time + noiseDecay + 0.03);
+        } else if (kit.snareType === "industrial") {
+          // bruit modulé en anneau par un carré : texture métallique,
+          // robotique — rien à voir avec un ton de peau
+          const noise = this.noise();
+          const modOsc = ctx.createOscillator();
+          modOsc.type = "square";
+          modOsc.frequency.value = (variant === 1 ? 210 : 170) * pm;
+          const ringGain = ctx.createGain();
+          ringGain.gain.value = 0;
+          const modScale = ctx.createGain();
+          modScale.gain.value = 1;
+          modOsc.connect(modScale);
+          modScale.connect(ringGain.gain);
+          const hp = ctx.createBiquadFilter();
+          hp.type = "highpass";
+          hp.frequency.value = 500;
+          const namp = ctx.createGain();
+          const noiseDecay = 0.16 * dm;
+          namp.gain.setValueAtTime(vel * 0.8, time);
+          namp.gain.exponentialRampToValueAtTime(0.001, time + noiseDecay);
+          noise.connect(ringGain);
+          ringGain.connect(hp);
+          hp.connect(namp);
+          namp.connect(dest);
+          noise.start(time);
+          noise.stop(time + noiseDecay + 0.02);
+          modOsc.start(time);
+          modOsc.stop(time + noiseDecay + 0.02);
+        } else {
+          // classic (80s) : deux partiels toniques + bruit bandpass+highpass
+          const toneDecay = 0.1 * dm;
+          for (const [freq, mix] of [[(variant === 1 ? 200 : 175), 0.5], [(variant === 1 ? 335 : 290), 0.22]] as const) {
+            const osc = ctx.createOscillator();
+            osc.type = "triangle";
+            osc.frequency.value = freq * pm;
+            const oscAmp = ctx.createGain();
+            oscAmp.gain.setValueAtTime(vel * mix, time);
+            oscAmp.gain.exponentialRampToValueAtTime(0.001, time + toneDecay);
+            osc.connect(oscAmp);
+            oscAmp.connect(dest);
+            osc.start(time);
+            osc.stop(time + toneDecay + 0.02);
+          }
+
+          const noise = this.noise();
+          const nf = ctx.createBiquadFilter();
+          nf.type = "bandpass";
+          nf.frequency.value = variant === 1 ? 1800 : 1400;
+          nf.Q.value = 0.6;
+          const nf2 = ctx.createBiquadFilter();
+          nf2.type = "highpass";
+          nf2.frequency.value = variant === 1 ? 900 : 650;
+          const namp = ctx.createGain();
+          const noiseDecay = (variant === 1 ? 0.13 : 0.22) * dm;
+          namp.gain.setValueAtTime(vel * (variant === 1 ? 0.7 : 0.95), time);
+          namp.gain.exponentialRampToValueAtTime(0.001, time + noiseDecay);
+          noise.connect(nf);
+          nf.connect(nf2);
+          nf2.connect(namp);
+          namp.connect(dest);
+          noise.start(time);
+          noise.stop(time + noiseDecay + 0.02);
+        }
         break;
       }
       case "lt":
@@ -611,32 +842,87 @@ export class TR707Engine {
       case "hhClosed":
       case "hhOpen": {
         const open = id === "hhOpen";
-        const fundamental = 40 * pm;
-        const ratios = [2, 3, 4.16, 5.43, 6.79, 8.21, 9.4];
-        const bandpass = ctx.createBiquadFilter();
-        bandpass.type = "bandpass";
-        bandpass.frequency.value = 10000;
-        bandpass.Q.value = 1;
-        const highpass = ctx.createBiquadFilter();
-        highpass.type = "highpass";
-        highpass.frequency.value = 7000;
-        const amp = ctx.createGain();
         const decay = (open ? 0.45 : 0.08) * dm;
-        amp.gain.setValueAtTime(vel * 0.35, time);
-        amp.gain.exponentialRampToValueAtTime(0.001, time + decay);
-        for (const r of ratios) {
-          const osc = ctx.createOscillator();
-          osc.type = "square";
-          // micro-désaccord par coup : casse le côté "trop identique" d'un
-          // oscillateur numérique pur, comme la dérive d'un vrai circuit analogique
-          osc.frequency.value = fundamental * r * (1 + (Math.random() * 2 - 1) * 0.01);
-          osc.connect(bandpass);
-          osc.start(time);
-          osc.stop(time + decay + 0.05);
+
+        if (kit.hatType === "fmBell") {
+          // FM 2-opérateurs : partiels inharmoniques bien définis, plus
+          // "cloche brillante" que le bruit métallique classique
+          const highpass = ctx.createBiquadFilter();
+          highpass.type = "highpass";
+          highpass.frequency.value = 3500;
+          const amp = ctx.createGain();
+          amp.gain.setValueAtTime(vel * 0.3, time);
+          amp.gain.exponentialRampToValueAtTime(0.001, time + decay);
+          for (const carrierFreq of [820, 1450, 2300]) {
+            const carrier = ctx.createOscillator();
+            carrier.type = "sine";
+            carrier.frequency.value = carrierFreq * pm;
+            const modulator = ctx.createOscillator();
+            modulator.type = "sine";
+            modulator.frequency.value = carrierFreq * 1.41 * pm;
+            const modGain = ctx.createGain();
+            modGain.gain.value = carrierFreq * 0.8;
+            modulator.connect(modGain);
+            modGain.connect(carrier.frequency);
+            carrier.connect(amp);
+            carrier.start(time);
+            carrier.stop(time + decay + 0.05);
+            modulator.start(time);
+            modulator.stop(time + decay + 0.05);
+          }
+          amp.connect(highpass);
+          highpass.connect(dest);
+        } else if (kit.hatType === "soft") {
+          // uniquement du bruit filtré, sans oscillateur : un "tss" respiré,
+          // beaucoup moins agressif que la technique 808/909
+          const noise = this.noise();
+          const bp = ctx.createBiquadFilter();
+          bp.type = "bandpass";
+          bp.frequency.value = 7500;
+          bp.Q.value = 0.6;
+          const amp = ctx.createGain();
+          amp.gain.setValueAtTime(0.0001, time);
+          amp.gain.linearRampToValueAtTime(vel * 0.32, time + 0.006);
+          amp.gain.exponentialRampToValueAtTime(0.001, time + decay);
+          noise.connect(bp);
+          bp.connect(amp);
+          amp.connect(dest);
+          noise.start(time);
+          noise.stop(time + decay + 0.03);
+        } else {
+          // classic (808/909) ou crushed (= classic + bit-crush) : 7
+          // oscillateurs carrés désaccordés à travers bandpass+highpass
+          const fundamental = 40 * pm;
+          const ratios = [2, 3, 4.16, 5.43, 6.79, 8.21, 9.4];
+          const bandpass = ctx.createBiquadFilter();
+          bandpass.type = "bandpass";
+          bandpass.frequency.value = 10000;
+          bandpass.Q.value = 1;
+          const highpass = ctx.createBiquadFilter();
+          highpass.type = "highpass";
+          highpass.frequency.value = 7000;
+          const amp = ctx.createGain();
+          amp.gain.setValueAtTime(vel * 0.35, time);
+          amp.gain.exponentialRampToValueAtTime(0.001, time + decay);
+          for (const r of ratios) {
+            const osc = ctx.createOscillator();
+            osc.type = "square";
+            osc.frequency.value = fundamental * r * (1 + (Math.random() * 2 - 1) * 0.01);
+            osc.connect(bandpass);
+            osc.start(time);
+            osc.stop(time + decay + 0.05);
+          }
+          bandpass.connect(highpass);
+          if (kit.hatType === "crushed") {
+            const crush = ctx.createWaveShaper();
+            crush.curve = makeCrushCurve() as Float32Array<ArrayBuffer>;
+            highpass.connect(crush);
+            crush.connect(amp);
+          } else {
+            highpass.connect(amp);
+          }
+          amp.connect(dest);
         }
-        bandpass.connect(highpass);
-        highpass.connect(amp);
-        amp.connect(dest);
         break;
       }
       case "crash":

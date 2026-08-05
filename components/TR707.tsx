@@ -213,6 +213,17 @@ export default function TR707() {
   const onClear = useCallback(() => updatePattern(defaultPattern(pattern.name, pattern.tempo)), [updatePattern, pattern.name, pattern.tempo]);
   const onRandomize = useCallback(() => updatePattern(randomPattern(pattern.length)), [updatePattern, pattern.length]);
 
+  // ————— EXPORT : télécharge le pattern courant en .json (pendant du DRAG & DROP) —————
+  const onExport = useCallback(() => {
+    const blob = new Blob([JSON.stringify(pattern, null, 2)], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `${pattern.name || "pattern"}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+  }, [pattern]);
+
   const onScaleClick = useCallback(() => {
     const idx = SCALE_STEPS.indexOf(pattern.length);
     const next = SCALE_STEPS[(idx + 1) % SCALE_STEPS.length] ?? 16;
@@ -610,6 +621,9 @@ export default function TR707() {
           )}
 
           <div className="bottom-bar">
+            <button className="chip-btn" onClick={onExport}>
+              EXPORT
+            </button>
             <button className="chip-btn" onClick={onClear}>
               CLEAR PATTERN
             </button>
