@@ -339,6 +339,57 @@ body {
   padding: 0 4px;
 }
 .menu-btn.wide { grid-column: span 1; background: linear-gradient(#5a4038, #3a2620); color: #ffcdb8; }
+.menu-btn.on { background: linear-gradient(#e8703e, #c94a1e); color: #fff2ea; }
+
+/* ————————————————————— toast + overlays HELP/ABOUT ————————————————————— */
+.toast {
+  position: absolute;
+  top: 10px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 30;
+  background: rgba(30, 31, 32, 0.95);
+  color: #f0e9df;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 8px 16px;
+  border-radius: 6px;
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.5);
+  max-width: 80%;
+  text-align: center;
+}
+.overlay-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(10, 10, 10, 0.55);
+  z-index: 40;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 6px;
+}
+.overlay-box {
+  position: relative;
+  background: linear-gradient(#e8e9e7, #cfd0ce);
+  color: #26272a;
+  border-radius: 8px;
+  padding: 22px 26px;
+  max-width: 480px;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.6);
+}
+.overlay-box h3 { font-size: 16px; margin-bottom: 10px; }
+.overlay-box p { font-size: 12px; line-height: 1.6; margin-bottom: 6px; }
+.overlay-box ul { font-size: 11.5px; line-height: 1.7; padding-left: 18px; }
+.overlay-close {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  border: none;
+  background: transparent;
+  font-size: 14px;
+  cursor: pointer;
+  color: #26272a;
+}
 .edit-btn {
   width: 100%;
   height: 24px;

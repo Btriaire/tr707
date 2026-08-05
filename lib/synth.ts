@@ -52,6 +52,22 @@ export const FADER_LABELS: Record<FaderId, string> = {
   ride: "RIDE",
 };
 
+// mapping General MIDI percussion -> voix du kit, pour le bouton MIDI
+export const MIDI_NOTE_MAP: Record<number, InstrumentId> = {
+  35: "bd2", 36: "bd1",
+  37: "rim", 38: "sd1", 40: "sd2",
+  39: "clap",
+  41: "lt", 43: "lt",
+  45: "mt", 47: "mt",
+  48: "ht", 50: "ht",
+  42: "hhClosed", 44: "hhClosed",
+  46: "hhOpen",
+  49: "crash", 57: "crash",
+  51: "ride", 59: "ride",
+  54: "tamb",
+  56: "cowbell",
+};
+
 export const NUM_STEPS = 16;
 export const NUM_PATTERNS = 8; // A..H
 export const BANK_LABELS = ["A", "B", "C", "D", "E", "F", "G", "H"];
@@ -115,15 +131,20 @@ export interface Kit {
   stereoWidth: number; // 0..1, largeur du panoramique par voix
   humanize: number; // 0..1, variation aléatoire de pitch/timing/vélocité par coup
   subBoost: number; // 0..1, renfort de sub sur le kick (mix supplémentaire)
+  toneTilt: number; // -1..1, bascule sombre(-1)/brillant(+1), shelving EQ global
 }
 export const KITS: Kit[] = [
-  { name: "80s Pop Kit 1", pitchMult: 1, decayMult: 1, drive: 0, room: 0.12, stereoWidth: 0.6, humanize: 0.2, subBoost: 0 },
-  { name: "Punchy Kit", pitchMult: 1.08, decayMult: 0.75, drive: 0.15, room: 0.05, stereoWidth: 0.5, humanize: 0.1, subBoost: 0.2 },
-  { name: "Lo-Fi Kit", pitchMult: 0.92, decayMult: 1.2, drive: 0.4, room: 0.2, stereoWidth: 0.4, humanize: 0.35, subBoost: 0 },
-  { name: "Bright Kit", pitchMult: 1.15, decayMult: 0.9, drive: 0.05, room: 0.1, stereoWidth: 0.7, humanize: 0.15, subBoost: 0 },
-  // deux kits "haute qualité" ajoutés — caractère nettement différent des 4 premiers
-  { name: "Acoustic Studio Kit", pitchMult: 0.97, decayMult: 1.15, drive: 0.04, room: 0.38, stereoWidth: 1, humanize: 0.55, subBoost: 0.1 },
-  { name: "Modern Punch Kit", pitchMult: 1.04, decayMult: 0.68, drive: 0.22, room: 0.06, stereoWidth: 0.75, humanize: 0.08, subBoost: 0.45 },
+  { name: "80s Pop Kit 1", pitchMult: 1, decayMult: 1, drive: 0, room: 0.12, stereoWidth: 0.6, humanize: 0.2, subBoost: 0, toneTilt: 0 },
+  { name: "Punchy Kit", pitchMult: 1.08, decayMult: 0.75, drive: 0.15, room: 0.05, stereoWidth: 0.5, humanize: 0.1, subBoost: 0.2, toneTilt: 0.1 },
+  { name: "Lo-Fi Kit", pitchMult: 0.92, decayMult: 1.2, drive: 0.4, room: 0.2, stereoWidth: 0.4, humanize: 0.35, subBoost: 0, toneTilt: -0.3 },
+  { name: "Bright Kit", pitchMult: 1.15, decayMult: 0.9, drive: 0.05, room: 0.1, stereoWidth: 0.7, humanize: 0.15, subBoost: 0, toneTilt: 0.35 },
+  { name: "Acoustic Studio Kit", pitchMult: 0.97, decayMult: 1.15, drive: 0.04, room: 0.38, stereoWidth: 1, humanize: 0.55, subBoost: 0.1, toneTilt: 0 },
+  { name: "Modern Punch Kit", pitchMult: 1.04, decayMult: 0.68, drive: 0.22, room: 0.06, stereoWidth: 0.75, humanize: 0.08, subBoost: 0.45, toneTilt: 0.1 },
+  // quatre kits supplémentaires, chacun avec une identité sonore nette
+  { name: "808 Trap Kit", pitchMult: 0.95, decayMult: 1.4, drive: 0.1, room: 0.05, stereoWidth: 0.6, humanize: 0.05, subBoost: 0.7, toneTilt: 0.3 },
+  { name: "Vintage Tape Kit", pitchMult: 0.9, decayMult: 1.05, drive: 0.5, room: 0.25, stereoWidth: 0.5, humanize: 0.4, subBoost: 0.15, toneTilt: -0.55 },
+  { name: "Industrial Kit", pitchMult: 1.15, decayMult: 0.6, drive: 0.65, room: 0.1, stereoWidth: 0.3, humanize: 0.05, subBoost: 0.3, toneTilt: 0.15 },
+  { name: "Jazz Brush Kit", pitchMult: 0.98, decayMult: 0.85, drive: 0, room: 0.3, stereoWidth: 1, humanize: 0.7, subBoost: 0, toneTilt: -0.2 },
 ];
 
 // position stéréo par voix (-1 gauche .. +1 droite), échelle par kit.stereoWidth
@@ -172,6 +193,11 @@ export class TR707Engine {
   private reverbSend: GainNode | null = null;
   private reverbConvolver: ConvolverNode | null = null;
   private reverbReturn: GainNode | null = null;
+  private toneLow: BiquadFilterNode | null = null;
+  private toneHigh: BiquadFilterNode | null = null;
+  private limiter: DynamicsCompressorNode | null = null;
+  private limiterMakeup: GainNode | null = null;
+  limiterOn = false;
   analyser: AnalyserNode | null = null;
 
   faders: Record<FaderId, number> = {
@@ -224,13 +250,37 @@ export class TR707Engine {
 
     this.shaper = ctx.createWaveShaper();
     this.shaper.curve = makeLofiCurve(KITS[this.kitIndex].drive) as Float32Array<ArrayBuffer>;
+
+    // tilt EQ (bascule sombre/brillant) — deux shelving filters en série,
+    // dosés par kit.toneTilt
+    this.toneLow = ctx.createBiquadFilter();
+    this.toneLow.type = "lowshelf";
+    this.toneLow.frequency.value = 250;
+    this.toneHigh = ctx.createBiquadFilter();
+    this.toneHigh.type = "highshelf";
+    this.toneHigh.frequency.value = 4000;
+    this.shaper.connect(this.toneLow);
+    this.toneLow.connect(this.toneHigh);
+
     this.master = ctx.createGain();
     this.master.gain.value = this.volume * 0.6;
-    this.shaper.connect(this.master);
-    this.master.connect(ctx.destination);
+    this.toneHigh.connect(this.master);
+
+    // limiteur de sortie, togglable (OPTION) sans reconnecter le graphe :
+    // désactivé = seuil 0dB/ratio 1 (transparent)
+    this.limiter = ctx.createDynamicsCompressor();
+    this.limiter.threshold.value = 0;
+    this.limiter.ratio.value = 1;
+    this.limiter.attack.value = 0.003;
+    this.limiter.release.value = 0.15;
+    this.limiterMakeup = ctx.createGain();
+    this.limiterMakeup.gain.value = 1;
+    this.master.connect(this.limiter);
+    this.limiter.connect(this.limiterMakeup);
+    this.limiterMakeup.connect(ctx.destination);
     this.analyser = ctx.createAnalyser();
     this.analyser.fftSize = 2048;
-    this.master.connect(this.analyser);
+    this.limiterMakeup.connect(this.analyser);
 
     // reverb "room" : un seul send global post-drive, le mix dépend de kit.room
     this.reverbSend = ctx.createGain();
@@ -243,6 +293,8 @@ export class TR707Engine {
     this.reverbSend.connect(this.reverbConvolver);
     this.reverbConvolver.connect(this.reverbReturn);
     this.reverbReturn.connect(this.master);
+
+    this.applyToneTilt();
 
     for (const id of FADER_IDS) {
       const g = ctx.createGain();
@@ -269,6 +321,24 @@ export class TR707Engine {
     const t = this.ctx?.currentTime ?? 0;
     if (this.shaper) this.shaper.curve = makeLofiCurve(KITS[i].drive) as Float32Array<ArrayBuffer>;
     this.reverbSend?.gain.setTargetAtTime(KITS[i].room, t, 0.05);
+    this.applyToneTilt();
+  }
+
+  private applyToneTilt() {
+    if (!this.ctx || !this.toneLow || !this.toneHigh) return;
+    const tilt = KITS[this.kitIndex].toneTilt;
+    const t = this.ctx.currentTime;
+    this.toneLow.gain.setTargetAtTime(-tilt * 6, t, 0.05);
+    this.toneHigh.gain.setTargetAtTime(tilt * 6, t, 0.05);
+  }
+
+  setLimiterOn(on: boolean) {
+    this.limiterOn = on;
+    if (!this.ctx || !this.limiter || !this.limiterMakeup) return;
+    const t = this.ctx.currentTime;
+    this.limiter.threshold.setTargetAtTime(on ? -14 : 0, t, 0.03);
+    this.limiter.ratio.setTargetAtTime(on ? 5 : 1, t, 0.03);
+    this.limiterMakeup.gain.setTargetAtTime(on ? 1.4 : 1, t, 0.03);
   }
 
   resume() {
