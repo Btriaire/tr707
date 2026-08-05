@@ -111,13 +111,29 @@ export interface Kit {
   pitchMult: number;
   decayMult: number;
   drive: number; // 0..1, ajoute un léger waveshaping "lo-fi"
+  room: number; // 0..1, envoi vers la reverb algorithmique
+  stereoWidth: number; // 0..1, largeur du panoramique par voix
+  humanize: number; // 0..1, variation aléatoire de pitch/timing/vélocité par coup
+  subBoost: number; // 0..1, renfort de sub sur le kick (mix supplémentaire)
 }
 export const KITS: Kit[] = [
-  { name: "80s Pop Kit 1", pitchMult: 1, decayMult: 1, drive: 0 },
-  { name: "Punchy Kit", pitchMult: 1.08, decayMult: 0.75, drive: 0.15 },
-  { name: "Lo-Fi Kit", pitchMult: 0.92, decayMult: 1.2, drive: 0.4 },
-  { name: "Bright Kit", pitchMult: 1.15, decayMult: 0.9, drive: 0.05 },
+  { name: "80s Pop Kit 1", pitchMult: 1, decayMult: 1, drive: 0, room: 0.12, stereoWidth: 0.6, humanize: 0.2, subBoost: 0 },
+  { name: "Punchy Kit", pitchMult: 1.08, decayMult: 0.75, drive: 0.15, room: 0.05, stereoWidth: 0.5, humanize: 0.1, subBoost: 0.2 },
+  { name: "Lo-Fi Kit", pitchMult: 0.92, decayMult: 1.2, drive: 0.4, room: 0.2, stereoWidth: 0.4, humanize: 0.35, subBoost: 0 },
+  { name: "Bright Kit", pitchMult: 1.15, decayMult: 0.9, drive: 0.05, room: 0.1, stereoWidth: 0.7, humanize: 0.15, subBoost: 0 },
+  // deux kits "haute qualité" ajoutés — caractère nettement différent des 4 premiers
+  { name: "Acoustic Studio Kit", pitchMult: 0.97, decayMult: 1.15, drive: 0.04, room: 0.38, stereoWidth: 1, humanize: 0.55, subBoost: 0.1 },
+  { name: "Modern Punch Kit", pitchMult: 1.04, decayMult: 0.68, drive: 0.22, room: 0.06, stereoWidth: 0.75, humanize: 0.08, subBoost: 0.45 },
 ];
+
+// position stéréo par voix (-1 gauche .. +1 droite), échelle par kit.stereoWidth
+const PAN_POS: Record<InstrumentId, number> = {
+  bd1: 0, bd2: 0, sd1: 0, sd2: 0,
+  lt: -0.38, mt: -0.05, ht: 0.32,
+  rim: 0.18, cowbell: 0.28, clap: 0, tamb: 0.22,
+  hhClosed: -0.28, hhOpen: -0.28,
+  crash: -0.42, ride: 0.42,
+};
 
 function makeLofiCurve(amount: number): Float32Array {
   const n = 1024;
@@ -130,12 +146,32 @@ function makeLofiCurve(amount: number): Float32Array {
   return c;
 }
 
+// petite reverb algorithmique (bruit en décroissance exponentielle) pour la
+// "room" des kits — pas d'échantillon externe requis
+function makeReverbImpulse(ctx: BaseAudioContext, seconds = 1.4): AudioBuffer {
+  const rate = ctx.sampleRate;
+  const len = Math.floor(rate * seconds);
+  const buf = ctx.createBuffer(2, len, rate);
+  for (let ch = 0; ch < 2; ch++) {
+    const data = buf.getChannelData(ch);
+    for (let i = 0; i < len; i++) {
+      const t = i / len;
+      data[i] = (Math.random() * 2 - 1) * Math.pow(1 - t, 2.2);
+    }
+  }
+  return buf;
+}
+
 export class TR707Engine {
   ctx: AudioContext | null = null;
   private noiseBuffer: AudioBuffer | null = null;
+  private colorNoiseBuffer: AudioBuffer | null = null; // bruit filtré, plus "rond" (kick/toms)
   private faderGains: Partial<Record<FaderId, GainNode>> = {};
   private master: GainNode | null = null;
   private shaper: WaveShaperNode | null = null;
+  private reverbSend: GainNode | null = null;
+  private reverbConvolver: ConvolverNode | null = null;
+  private reverbReturn: GainNode | null = null;
   analyser: AnalyserNode | null = null;
 
   faders: Record<FaderId, number> = {
@@ -175,6 +211,17 @@ export class TR707Engine {
     for (let i = 0; i < len; i++) data[i] = Math.random() * 2 - 1;
     this.noiseBuffer = buf;
 
+    // bruit "coloré" (filtré passe-bas en post-traitement) : plus rond que le
+    // blanc pur, utilisé pour le corps du kick et des toms
+    const colorBuf = ctx.createBuffer(1, len, ctx.sampleRate);
+    const colorData = colorBuf.getChannelData(0);
+    let prev = 0;
+    for (let i = 0; i < len; i++) {
+      prev = prev * 0.92 + data[i] * 0.08;
+      colorData[i] = prev * 4;
+    }
+    this.colorNoiseBuffer = colorBuf;
+
     this.shaper = ctx.createWaveShaper();
     this.shaper.curve = makeLofiCurve(KITS[this.kitIndex].drive) as Float32Array<ArrayBuffer>;
     this.master = ctx.createGain();
@@ -184,6 +231,18 @@ export class TR707Engine {
     this.analyser = ctx.createAnalyser();
     this.analyser.fftSize = 2048;
     this.master.connect(this.analyser);
+
+    // reverb "room" : un seul send global post-drive, le mix dépend de kit.room
+    this.reverbSend = ctx.createGain();
+    this.reverbSend.gain.value = KITS[this.kitIndex].room;
+    this.reverbConvolver = ctx.createConvolver();
+    this.reverbConvolver.buffer = makeReverbImpulse(ctx);
+    this.reverbReturn = ctx.createGain();
+    this.reverbReturn.gain.value = 0.5;
+    this.shaper.connect(this.reverbSend);
+    this.reverbSend.connect(this.reverbConvolver);
+    this.reverbConvolver.connect(this.reverbReturn);
+    this.reverbReturn.connect(this.master);
 
     for (const id of FADER_IDS) {
       const g = ctx.createGain();
@@ -207,22 +266,32 @@ export class TR707Engine {
 
   setKit(i: number) {
     this.kitIndex = i;
+    const t = this.ctx?.currentTime ?? 0;
     if (this.shaper) this.shaper.curve = makeLofiCurve(KITS[i].drive) as Float32Array<ArrayBuffer>;
+    this.reverbSend?.gain.setTargetAtTime(KITS[i].room, t, 0.05);
   }
 
   resume() {
     this.ctx?.resume();
   }
 
-  private noise(): AudioBufferSourceNode {
+  private noise(colored = false): AudioBufferSourceNode {
     const src = this.ctx!.createBufferSource();
-    src.buffer = this.noiseBuffer;
+    src.buffer = colored ? this.colorNoiseBuffer : this.noiseBuffer;
     src.loop = false;
     return src;
   }
 
-  private destFor(inst: InstrumentDef): AudioNode {
-    return this.faderGains[inst.fader] ?? this.shaper!;
+  // panning par voix (position fixe × largeur stéréo du kit), câblé devant le
+  // fader de groupe — transparent pour tout le code de synthèse existant
+  private destFor(inst: InstrumentDef, kit: Kit): AudioNode {
+    const faderGain = this.faderGains[inst.fader] ?? this.shaper!;
+    const pan = (PAN_POS[inst.id] ?? 0) * kit.stereoWidth;
+    if (!this.ctx || Math.abs(pan) < 0.005) return faderGain;
+    const panner = this.ctx.createStereoPanner();
+    panner.pan.value = Math.max(-1, Math.min(1, pan));
+    panner.connect(faderGain);
+    return panner;
   }
 
   // ————— synthèse par instrument —————
@@ -230,10 +299,28 @@ export class TR707Engine {
     const ctx = this.ctx;
     if (!ctx) return;
     const inst = INSTRUMENTS.find((i) => i.id === id)!;
-    const dest = this.destFor(inst);
     const kit = KITS[this.kitIndex];
-    const pm = kit.pitchMult;
+    const dest = this.destFor(inst, kit);
+
+    // humanisation : légère variation de pitch/vélocité par coup — évite le
+    // rendu "trop parfait" d'une machine purement synthétique
+    const pm = kit.pitchMult * (1 + (Math.random() * 2 - 1) * kit.humanize * 0.03);
     const dm = kit.decayMult;
+    vel = vel * (1 + (Math.random() * 2 - 1) * kit.humanize * 0.12);
+
+    if ((id === "bd1" || id === "bd2") && kit.subBoost > 0) {
+      const sub = ctx.createOscillator();
+      sub.type = "sine";
+      sub.frequency.value = 54 * pm;
+      const subAmp = ctx.createGain();
+      const subDecay = 0.4 * dm;
+      subAmp.gain.setValueAtTime(vel * kit.subBoost * 0.8, time);
+      subAmp.gain.exponentialRampToValueAtTime(0.001, time + subDecay);
+      sub.connect(subAmp);
+      subAmp.connect(dest);
+      sub.start(time);
+      sub.stop(time + subDecay + 0.05);
+    }
 
     switch (id) {
       case "bd1":
@@ -270,28 +357,37 @@ export class TR707Engine {
       case "sd1":
       case "sd2": {
         const variant = id === "sd1" ? 1 : 2;
-        const osc = ctx.createOscillator();
-        osc.type = "triangle";
-        osc.frequency.value = (variant === 1 ? 200 : 175) * pm;
-        const oscAmp = ctx.createGain();
         const toneDecay = 0.1 * dm;
-        oscAmp.gain.setValueAtTime(vel * 0.5, time);
-        oscAmp.gain.exponentialRampToValueAtTime(0.001, time + toneDecay);
-        osc.connect(oscAmp);
-        oscAmp.connect(dest);
-        osc.start(time);
-        osc.stop(time + toneDecay + 0.02);
+        // deux partiels toniques (peau du dessus + peau du dessous), comme
+        // les deux résonances d'une vraie caisse claire
+        for (const [freq, mix] of [[(variant === 1 ? 200 : 175), 0.5], [(variant === 1 ? 335 : 290), 0.22]] as const) {
+          const osc = ctx.createOscillator();
+          osc.type = "triangle";
+          osc.frequency.value = freq * pm;
+          const oscAmp = ctx.createGain();
+          oscAmp.gain.setValueAtTime(vel * mix, time);
+          oscAmp.gain.exponentialRampToValueAtTime(0.001, time + toneDecay);
+          osc.connect(oscAmp);
+          oscAmp.connect(dest);
+          osc.start(time);
+          osc.stop(time + toneDecay + 0.02);
+        }
 
         const noise = this.noise();
         const nf = ctx.createBiquadFilter();
-        nf.type = "highpass";
-        nf.frequency.value = variant === 1 ? 900 : 650;
+        nf.type = "bandpass";
+        nf.frequency.value = variant === 1 ? 1800 : 1400;
+        nf.Q.value = 0.6;
+        const nf2 = ctx.createBiquadFilter();
+        nf2.type = "highpass";
+        nf2.frequency.value = variant === 1 ? 900 : 650;
         const namp = ctx.createGain();
         const noiseDecay = (variant === 1 ? 0.13 : 0.22) * dm;
         namp.gain.setValueAtTime(vel * (variant === 1 ? 0.7 : 0.95), time);
         namp.gain.exponentialRampToValueAtTime(0.001, time + noiseDecay);
         noise.connect(nf);
-        nf.connect(namp);
+        nf.connect(nf2);
+        nf2.connect(namp);
         namp.connect(dest);
         noise.start(time);
         noise.stop(time + noiseDecay + 0.02);
@@ -313,6 +409,34 @@ export class TR707Engine {
         amp.connect(dest);
         osc.start(time);
         osc.stop(time + decay + 0.05);
+
+        // overtone discret : donne un peu de corps/réalisme au fût
+        const osc2 = ctx.createOscillator();
+        osc2.type = "sine";
+        osc2.frequency.setValueAtTime(base * 2.02, time);
+        osc2.frequency.exponentialRampToValueAtTime(base * 1.2, time + 0.08);
+        const amp2 = ctx.createGain();
+        amp2.gain.setValueAtTime(vel * 0.18, time);
+        amp2.gain.exponentialRampToValueAtTime(0.001, time + decay * 0.4);
+        osc2.connect(amp2);
+        amp2.connect(dest);
+        osc2.start(time);
+        osc2.stop(time + decay * 0.4 + 0.05);
+
+        // transitoire d'attaque (bruit coloré) : le "clac" de la baguette
+        const noise = this.noise(true);
+        const nf = ctx.createBiquadFilter();
+        nf.type = "bandpass";
+        nf.frequency.value = base * 3;
+        nf.Q.value = 0.8;
+        const namp = ctx.createGain();
+        namp.gain.setValueAtTime(vel * 0.25, time);
+        namp.gain.exponentialRampToValueAtTime(0.001, time + 0.025);
+        noise.connect(nf);
+        nf.connect(namp);
+        namp.connect(dest);
+        noise.start(time);
+        noise.stop(time + 0.03);
         break;
       }
       case "rim": {
@@ -418,7 +542,7 @@ export class TR707Engine {
       case "hhOpen": {
         const open = id === "hhOpen";
         const fundamental = 40 * pm;
-        const ratios = [2, 3, 4.16, 5.43, 6.79, 8.21];
+        const ratios = [2, 3, 4.16, 5.43, 6.79, 8.21, 9.4];
         const bandpass = ctx.createBiquadFilter();
         bandpass.type = "bandpass";
         bandpass.frequency.value = 10000;
@@ -433,7 +557,9 @@ export class TR707Engine {
         for (const r of ratios) {
           const osc = ctx.createOscillator();
           osc.type = "square";
-          osc.frequency.value = fundamental * r;
+          // micro-désaccord par coup : casse le côté "trop identique" d'un
+          // oscillateur numérique pur, comme la dérive d'un vrai circuit analogique
+          osc.frequency.value = fundamental * r * (1 + (Math.random() * 2 - 1) * 0.01);
           osc.connect(bandpass);
           osc.start(time);
           osc.stop(time + decay + 0.05);
@@ -460,13 +586,29 @@ export class TR707Engine {
         for (const r of ratios) {
           const osc = ctx.createOscillator();
           osc.type = "square";
-          osc.frequency.value = fundamental * r * mult;
+          osc.frequency.value = fundamental * r * mult * (1 + (Math.random() * 2 - 1) * 0.008);
           osc.connect(bp);
           osc.start(time);
           osc.stop(time + decay + 0.1);
         }
         bp.connect(amp);
         amp.connect(dest);
+
+        // "ping" tonal de la ride : une fréquence de cloche bien définie,
+        // absente sur le crash — c'est ce qui différencie les deux à l'oreille
+        if (!isCrash) {
+          const bell = ctx.createOscillator();
+          bell.type = "triangle";
+          bell.frequency.value = 850 * pm;
+          const bellAmp = ctx.createGain();
+          const bellDecay = 0.5 * dm;
+          bellAmp.gain.setValueAtTime(vel * 0.22, time);
+          bellAmp.gain.exponentialRampToValueAtTime(0.001, time + bellDecay);
+          bell.connect(bellAmp);
+          bellAmp.connect(dest);
+          bell.start(time);
+          bell.stop(time + bellDecay + 0.05);
+        }
         break;
       }
     }
@@ -534,9 +676,13 @@ export class TR707Engine {
 
     const accented = pattern.accent[stepIndex];
     const accentBoost = accented ? 1 + this.faders.ac * 0.6 : 1;
+    const humanize = KITS[this.kitIndex].humanize;
     for (const inst of INSTRUMENTS) {
       if (pattern.steps[inst.id][stepIndex]) {
-        this.triggerInstrument(inst.id, time, Math.min(1, 0.72 * accentBoost));
+        // micro-décalage temporel par voix : un vrai batteur ne tombe jamais
+        // deux fois exactement sur le même instant
+        const jitter = (Math.random() * 2 - 1) * humanize * 0.006;
+        this.triggerInstrument(inst.id, time + jitter, Math.min(1, 0.72 * accentBoost));
       }
     }
   }
