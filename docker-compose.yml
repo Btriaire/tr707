@@ -1,0 +1,9 @@
+# TR-707 sur le VPS. Lance :  docker compose up -d --build
+services:
+  tr707:
+    build: .
+    image: tr707
+    container_name: tr707
+    ports:
+      - "127.0.0.1:${HOST_PORT:-3600}:3000"
+    restart: unless-stopped
