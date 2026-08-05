@@ -128,15 +128,20 @@ export default function TR707() {
     return () => clearTimeout(id);
   }, [faders, volume, kitIndex, shuffle, patterns, currentPattern, loaded]);
 
+  // Pas de garde sur engine.isReady ici : setFader/setVolume/setKit mettent
+  // toujours à jour les champs internes du moteur (this.faders/volume/
+  // kitIndex), lus tels quels par buildGraph() à l'initialisation paresseuse.
+  // Avec la garde, un réglage touché AVANT le premier son (avant init du
+  // AudioContext) était silencieusement perdu — l'affichage changeait mais
+  // le son restait sur les valeurs par défaut.
   useEffect(() => {
-    if (!engine.isReady) return;
     for (const id of FADER_IDS) engine.setFader(id, faders[id]);
   }, [faders, engine]);
   useEffect(() => {
-    if (engine.isReady) engine.setVolume(volume);
+    engine.setVolume(volume);
   }, [volume, engine]);
   useEffect(() => {
-    if (engine.isReady) engine.setKit(kitIndex);
+    engine.setKit(kitIndex);
   }, [kitIndex, engine]);
   useEffect(() => {
     engine.shuffle = shuffle;
