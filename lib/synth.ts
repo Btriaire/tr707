@@ -435,6 +435,31 @@ export const KITS: Kit[] = [
       crash: "/samples/808kit/crash.wav",
       ride: "/samples/808kit/ride.wav",
     } },
+  // kit "909 Legacy" : vrais échantillons WAV d'un TR-909 (fournis par
+  // l'utilisateur) — cette fois identifiés avec certitude, les noms de
+  // fichiers encodent le numéro de note General MIDI percussion standard
+  // (35=Bass Drum, 38=Acoustic Snare, 42=Closed HH, 46=Open HH, 49=Crash 1,
+  // 51=Ride 1, 37=Side Stick, 39=Hand Clap, 41/45/50=toms low/mid/hi...) qui
+  // correspond exactement aux étiquettes du pack (BD1/SN1/CHH/OHH/CS1/RD2...)
+  // — le 909 matériel n'a pas de cowbell/tambourine, ces deux voix restent
+  // donc en synthèse comme sur le vrai instrument
+  { name: "909 Legacy Kit", kickType: "classic", snareType: "classic", hatType: "classic",
+    pitchMult: 1, decayMult: 1, drive: 0, room: 0.05, stereoWidth: 0.6, humanize: 0.05, subBoost: 0.15, toneTilt: 0.15,
+    sampleUrls: {
+      bd1: "/samples/909kit/bd1.wav",
+      bd2: "/samples/909kit/bd2.wav",
+      sd1: "/samples/909kit/sd1.wav",
+      sd2: "/samples/909kit/sd2.wav",
+      lt: "/samples/909kit/lt.wav",
+      mt: "/samples/909kit/mt.wav",
+      ht: "/samples/909kit/ht.wav",
+      rim: "/samples/909kit/rim.wav",
+      clap: "/samples/909kit/clap.wav",
+      hhClosed: "/samples/909kit/hhClosed.wav",
+      hhOpen: "/samples/909kit/hhOpen.wav",
+      crash: "/samples/909kit/crash.wav",
+      ride: "/samples/909kit/ride.wav",
+    } },
 ];
 
 // position stéréo par voix (-1 gauche .. +1 droite), échelle par kit.stereoWidth
