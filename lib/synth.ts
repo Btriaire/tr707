@@ -234,6 +234,115 @@ const PRESET_SPECS: PresetSpec[] = [
     },
     accent: [3, 11],
   },
+  {
+    name: "Good Times",
+    tempo: 120,
+    hits: {
+      bd1: [0, 6, 8, 14],
+      sd1: [4, 12],
+      hhClosed: [0, 2, 4, 6, 8, 10, 12, 14],
+    },
+    accent: [0, 8],
+  },
+  {
+    name: "Apache Break",
+    tempo: 108,
+    hits: {
+      bd1: [0, 10],
+      sd1: [4, 12],
+      lt: [14],
+      ht: [15],
+      hhClosed: [0, 2, 4, 6, 8, 10, 12, 14],
+    },
+    accent: [4, 12],
+  },
+  {
+    name: "Think Break",
+    tempo: 100,
+    hits: {
+      bd1: [0, 6],
+      sd1: [4, 10, 12],
+      hhClosed: [0, 2, 4, 6, 8, 10, 12, 14],
+    },
+    accent: [4, 12],
+  },
+  {
+    name: "Impeach The Prez",
+    tempo: 96,
+    hits: {
+      bd1: [0, 8, 10],
+      sd1: [4, 12],
+      hhClosed: [0, 2, 4, 6, 8, 10, 12, 14],
+    },
+    accent: [4, 12],
+  },
+  {
+    name: "Blue Monday",
+    tempo: 130,
+    hits: {
+      bd1: [0, 3, 6, 8, 11, 14],
+      clap: [4, 12],
+      hhClosed: [0, 2, 4, 6, 8, 10, 12, 14],
+    },
+    accent: [0, 8],
+  },
+  {
+    name: "Walk This Way",
+    tempo: 106,
+    hits: {
+      bd1: [0, 10],
+      sd1: [4, 12],
+      hhClosed: [0, 2, 4, 6, 8, 10, 12],
+      hhOpen: [14],
+    },
+    accent: [4, 12],
+  },
+  {
+    name: "Superstition Funk",
+    tempo: 100,
+    hits: {
+      bd1: [0, 3, 8, 11],
+      sd1: [4, 12],
+      hhClosed: [0, 2, 4, 6, 8, 10, 12, 14],
+    },
+    accent: [0, 8],
+  },
+  {
+    name: "Gated Tom Fill",
+    tempo: 106,
+    hits: {
+      bd1: [0],
+      sd1: [8],
+      ht: [9],
+      lt: [10, 12, 14],
+      mt: [11, 13, 15],
+    },
+    accent: [10, 12, 14],
+  },
+  {
+    name: "Come Together Toms",
+    tempo: 82,
+    hits: {
+      bd1: [0],
+      sd1: [8],
+      lt: [6],
+      mt: [10],
+      ht: [14],
+      hhClosed: [0, 2, 4, 6, 8, 10, 12, 14],
+    },
+    accent: [6, 10, 14],
+  },
+  {
+    name: "Papa Rollin Stone",
+    tempo: 104,
+    hits: {
+      bd1: [0, 10],
+      sd1: [4, 12],
+      hhClosed: [0, 2, 4, 6, 8, 10, 12, 14],
+      tamb: [2, 6, 10, 14],
+    },
+    accent: [4, 12],
+  },
 ];
 
 function buildPresetPattern(spec: PresetSpec): Pattern {
