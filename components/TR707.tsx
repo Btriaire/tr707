@@ -16,6 +16,8 @@ import {
   defaultPattern,
   demoPattern,
   randomPattern,
+  PRESET_PATTERNS,
+  PRESET_NAMES,
   type InstrumentId,
   type FaderId,
   type Pattern,
@@ -80,7 +82,7 @@ export default function TR707() {
   const [editMode, setEditMode] = useState(true);
   const [accentEdit, setAccentEdit] = useState(false);
   const [loaded, setLoaded] = useState(false);
-  const [listName] = useState("1 Preset");
+  const [presetIndex, setPresetIndex] = useState(0);
 
   // ————— état des boutons MENU / PANEL, tous réellement câblés —————
   const [midiOn, setMidiOn] = useState(false);
@@ -174,6 +176,17 @@ export default function TR707() {
       setPatterns((ps) => ps.map((p, i) => (i === currentPattern ? { ...p, ...patch } : p)));
     },
     [currentPattern],
+  );
+
+  // ————— LIST : parcourt la bibliothèque de grooves emblématiques et charge —————
+  // le pattern sélectionné dans le slot courant (A-H), même logique que KIT
+  const loadPreset = useCallback(
+    (idx: number) => {
+      setPresetIndex(idx);
+      updatePattern({ ...PRESET_PATTERNS[idx] });
+      showToast(`Pattern "${PRESET_NAMES[idx]}" chargé`);
+    },
+    [updatePattern, showToast],
   );
 
   const togglePlay = useCallback(() => {
@@ -431,7 +444,11 @@ export default function TR707() {
                 <div className="lcd-fields">
                   <div className="lcd-field">
                     <span className="lcd-field-label">LIST</span>
-                    <span className="lcd-field-value">{listName}</span>
+                    <span className="lcd-field-value">{PRESET_NAMES[presetIndex]}</span>
+                    <div className="lcd-tempo-stepper">
+                      <button onClick={() => loadPreset((presetIndex - 1 + PRESET_NAMES.length) % PRESET_NAMES.length)}>▲</button>
+                      <button onClick={() => loadPreset((presetIndex + 1) % PRESET_NAMES.length)}>▼</button>
+                    </div>
                   </div>
                   <div className="lcd-field">
                     <span className="lcd-field-label">PTN</span>

@@ -122,6 +122,133 @@ export function randomPattern(length = 16): Pattern {
   return p;
 }
 
+// bibliothèque de grooves emblématiques — le rythme (la suite de pas) n'est
+// pas protégeable par le droit d'auteur, contrairement à l'enregistrement ou
+// à la mélodie ; c'est une pratique standard sur toutes les boîtes à rythmes
+interface PresetSpec {
+  name: string;
+  tempo: number;
+  length?: number;
+  hits: Partial<Record<InstrumentId, number[]>>;
+  accent?: number[];
+}
+
+const PRESET_SPECS: PresetSpec[] = [
+  {
+    name: "Funky Drummer",
+    tempo: 100,
+    hits: {
+      bd1: [0, 6, 10],
+      sd1: [4, 9, 12],
+      hhClosed: [0, 2, 4, 6, 8, 10, 12, 14],
+      hhOpen: [15],
+    },
+    accent: [0, 4, 12],
+  },
+  {
+    name: "When Levee Breaks",
+    tempo: 74,
+    hits: {
+      bd1: [0, 3, 6, 10],
+      sd1: [4, 12],
+    },
+    accent: [0, 4, 10, 12],
+  },
+  {
+    name: "Billie Jean",
+    tempo: 117,
+    hits: {
+      bd1: [0, 4, 8, 12],
+      sd1: [4, 12],
+      hhClosed: [0, 2, 4, 6, 8, 10, 12, 14],
+    },
+    accent: [4, 12],
+  },
+  {
+    name: "We Will Rock You",
+    tempo: 81,
+    hits: {
+      bd1: [0, 4],
+      clap: [8],
+    },
+    accent: [0, 4, 8],
+  },
+  {
+    name: "Amen Break",
+    tempo: 136,
+    hits: {
+      bd1: [0, 10],
+      sd1: [4, 7, 12, 14],
+      hhClosed: [0, 2, 4, 6, 8, 10, 12, 14],
+    },
+    accent: [4, 12],
+  },
+  {
+    name: "Disco Four Floor",
+    tempo: 120,
+    hits: {
+      bd1: [0, 4, 8, 12],
+      hhOpen: [2, 6, 10, 14],
+      clap: [4, 12],
+    },
+    accent: [0, 4, 8, 12],
+  },
+  {
+    name: "Rosanna Shuffle",
+    tempo: 86,
+    hits: {
+      bd1: [0, 10],
+      sd1: [8],
+      hhClosed: [0, 3, 6, 8, 11, 14],
+    },
+    accent: [8],
+  },
+  {
+    name: "Motown Stomp",
+    tempo: 112,
+    hits: {
+      bd1: [0, 8],
+      sd1: [4, 12],
+      hhClosed: [0, 2, 4, 6, 8, 10, 12, 14],
+      tamb: [2, 6, 10, 14],
+    },
+    accent: [4, 12],
+  },
+  {
+    name: "Boom Bap",
+    tempo: 90,
+    hits: {
+      bd1: [0, 10],
+      sd1: [4, 12],
+      hhClosed: [0, 2, 4, 6, 8, 10, 12, 14],
+    },
+    accent: [4, 12],
+  },
+  {
+    name: "Dembow Reggaeton",
+    tempo: 95,
+    hits: {
+      bd1: [0, 6, 8, 14],
+      clap: [3, 11],
+      hhClosed: [0, 2, 4, 6, 8, 10, 12, 14],
+    },
+    accent: [3, 11],
+  },
+];
+
+function buildPresetPattern(spec: PresetSpec): Pattern {
+  const p = defaultPattern(spec.name, spec.tempo);
+  p.length = spec.length ?? NUM_STEPS;
+  for (const [inst, idxs] of Object.entries(spec.hits) as [InstrumentId, number[]][]) {
+    for (const i of idxs) p.steps[inst][i] = true;
+  }
+  if (spec.accent) for (const i of spec.accent) p.accent[i] = true;
+  return p;
+}
+
+export const PRESET_PATTERNS: Pattern[] = PRESET_SPECS.map(buildPresetPattern);
+export const PRESET_NAMES: string[] = PRESET_SPECS.map((s) => s.name);
+
 // chaque famille a un algorithme de synthèse RÉELLEMENT différent (pas
 // juste pitch/decay) — c'est kickType/snareType/hatType qui font sonner les
 // kits différemment, pitchMult/decayMult ne font qu'affiner à la marge
