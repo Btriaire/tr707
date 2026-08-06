@@ -417,6 +417,24 @@ export const KITS: Kit[] = [
       sd2: "/samples/aigen/sd2.mp3",
       lt: "/samples/aigen/lt.mp3",
     } },
+  // kit "808 Legacy" : vrais échantillons WAV d'un TR-808 (fournis par
+  // l'utilisateur), identifiés par analyse spectrale (fréquence dominante,
+  // durée, enveloppe) faute de pouvoir les écouter directement — bd2/sd2/
+  // toms/tamb n'avaient pas de son 808 identifiable avec confiance dans le
+  // pack fourni et retombent donc sur la synthèse "deep808"/"classic"
+  { name: "808 Legacy Kit", kickType: "deep808", snareType: "classic", hatType: "classic",
+    pitchMult: 1, decayMult: 1, drive: 0, room: 0.05, stereoWidth: 0.6, humanize: 0.05, subBoost: 0.5, toneTilt: 0.1,
+    sampleUrls: {
+      bd1: "/samples/808kit/bd1.wav",
+      sd1: "/samples/808kit/sd1.wav",
+      rim: "/samples/808kit/rim.wav",
+      cowbell: "/samples/808kit/cowbell.wav",
+      clap: "/samples/808kit/clap.wav",
+      hhClosed: "/samples/808kit/hhClosed.wav",
+      hhOpen: "/samples/808kit/hhOpen.wav",
+      crash: "/samples/808kit/crash.wav",
+      ride: "/samples/808kit/ride.wav",
+    } },
 ];
 
 // position stéréo par voix (-1 gauche .. +1 droite), échelle par kit.stereoWidth
