@@ -343,6 +343,106 @@ const PRESET_SPECS: PresetSpec[] = [
     },
     accent: [4, 12],
   },
+  {
+    name: "Depeche Mode Stomp",
+    tempo: 123,
+    hits: {
+      bd1: [0, 8],
+      clap: [4, 12],
+      tamb: [0, 2, 4, 6, 8, 10, 12, 14],
+      rim: [6, 14],
+    },
+    accent: [0, 4, 8, 12],
+  },
+  {
+    name: "Sweet Dreams Pulse",
+    tempo: 125,
+    hits: {
+      bd1: [0, 4, 8, 12],
+      clap: [4, 12],
+      hhClosed: [0, 2, 4, 6, 8, 10, 12, 14],
+    },
+    accent: [0, 8],
+  },
+  {
+    name: "I Feel Love Pulse",
+    tempo: 125,
+    hits: {
+      bd1: [0, 4, 8, 12],
+      hhClosed: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15],
+    },
+    accent: [0, 4, 8, 12],
+  },
+  {
+    name: "Around The World",
+    tempo: 121,
+    hits: {
+      bd1: [0, 3, 6, 8, 11, 14],
+      hhOpen: [4, 12],
+    },
+    accent: [0, 8],
+  },
+  {
+    name: "Sabotage Break",
+    tempo: 171,
+    hits: {
+      bd1: [0, 7, 10],
+      sd1: [4, 12],
+      hhClosed: [0, 2, 4, 6, 8, 10, 12, 14],
+    },
+    accent: [4, 12],
+  },
+  {
+    name: "Kashmir Stomp",
+    tempo: 82,
+    hits: {
+      bd1: [0, 6, 10],
+      sd1: [8],
+      lt: [3, 11],
+    },
+    accent: [0, 8],
+  },
+  {
+    name: "Whole Lotta Love",
+    tempo: 92,
+    hits: {
+      bd1: [0, 10],
+      sd1: [4, 12],
+      hhClosed: [0, 3, 6, 8, 11, 14],
+    },
+    accent: [4, 12],
+  },
+  {
+    name: "Sing Sing Sing Swing",
+    tempo: 100,
+    hits: {
+      bd1: [0, 8],
+      lt: [2, 6, 10, 14],
+      ht: [4, 12],
+    },
+    accent: [0, 8],
+  },
+  {
+    name: "Message In A Bottle",
+    tempo: 144,
+    hits: {
+      bd1: [0, 10],
+      sd1: [8],
+      hhClosed: [2, 6, 10, 14],
+      rim: [4, 12],
+    },
+    accent: [8],
+  },
+  {
+    name: "Give It Away Funk",
+    tempo: 92,
+    hits: {
+      bd1: [0, 3, 6, 10, 13],
+      sd1: [8],
+      hhClosed: [0, 2, 4, 6, 8, 10, 12, 14],
+    },
+    accent: [0, 8],
+  },
 ];
 
 function buildPresetPattern(spec: PresetSpec): Pattern {
