@@ -460,6 +460,48 @@ export const KITS: Kit[] = [
       crash: "/samples/909kit/crash.wav",
       ride: "/samples/909kit/ride.wav",
     } },
+  // kit "Street Symphony" : pack de batterie acoustique/urbain fourni par
+  // l'utilisateur (noms clairs Kick/Snare/HiHat/Clap/RimShot), variantes
+  // distinguées par analyse spectrale (fréquence dominante/centroïde) faute
+  // de pouvoir les écouter — cowbell/tamb complétés depuis un 2e pack fourni
+  // (Soundtrack Perc Kit, percussions live, converti AIFF→WAV) puisque le
+  // pack batterie seul n'en contenait pas ; pas de toms/cymbales dans ces
+  // deux packs, ces voix restent en synthèse
+  { name: "Street Symphony Kit", kickType: "acoustic", snareType: "acoustic", hatType: "classic",
+    pitchMult: 1, decayMult: 1, drive: 0, room: 0.1, stereoWidth: 0.7, humanize: 0.1, subBoost: 0.1, toneTilt: 0,
+    sampleUrls: {
+      bd1: "/samples/streetkit/bd1.wav",
+      bd2: "/samples/streetkit/bd2.wav",
+      sd1: "/samples/streetkit/sd1.wav",
+      sd2: "/samples/streetkit/sd2.wav",
+      rim: "/samples/streetkit/rim.wav",
+      clap: "/samples/streetkit/clap.wav",
+      cowbell: "/samples/streetkit/cowbell.wav",
+      tamb: "/samples/streetkit/tamb.wav",
+      hhClosed: "/samples/streetkit/hhClosed.wav",
+      hhOpen: "/samples/streetkit/hhOpen.wav",
+    } },
+  // kit "West Coast Boom" : construit à partir d'un pack de production hip-hop
+  // fourni par l'utilisateur — nommé par le style plutôt que par le nom du
+  // producteur associé au pack (nom propre/marque, à éviter comme libellé
+  // dans une appli web publique). Voix identifiées via les abréviations du
+  // pack (kik/snr/hat/rim/cras, vérifiées par fréquence fondamentale : tous
+  // les "kik" ~60-80Hz, tous les "snr" ~210-295Hz, cohérent avec les
+  // étiquettes) ; cowbell = triangle du pack "True Soul" en substitut créatif
+  // faute de vraie cowbell dans le pack ; pas de toms/ride/clap/tamb/open hat
+  // identifiés avec confiance, ces voix restent en synthèse
+  { name: "West Coast Boom Kit", kickType: "deep808", snareType: "tight", hatType: "classic",
+    pitchMult: 1, decayMult: 1, drive: 0.05, room: 0.08, stereoWidth: 0.65, humanize: 0.08, subBoost: 0.3, toneTilt: 0.05,
+    sampleUrls: {
+      bd1: "/samples/wcboomkit/bd1.wav",
+      bd2: "/samples/wcboomkit/bd2.wav",
+      sd1: "/samples/wcboomkit/sd1.wav",
+      sd2: "/samples/wcboomkit/sd2.wav",
+      rim: "/samples/wcboomkit/rim.wav",
+      hhClosed: "/samples/wcboomkit/hhClosed.wav",
+      crash: "/samples/wcboomkit/crash.wav",
+      cowbell: "/samples/wcboomkit/cowbell.wav",
+    } },
 ];
 
 // position stéréo par voix (-1 gauche .. +1 droite), échelle par kit.stereoWidth
